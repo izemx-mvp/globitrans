@@ -217,7 +217,7 @@ function DeclarantDetailPage() {
                 <Tr key={m.id}>
                   <Td>
                     <Link
-                      to="/mains-levees/$reference"
+                      to="/mes-dossiers/$reference"
                       params={{ reference: m.reference }}
                       className="mono text-[13px] font-medium text-primary hover:underline"
                     >

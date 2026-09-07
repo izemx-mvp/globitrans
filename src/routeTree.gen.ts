@@ -13,9 +13,9 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as EspaceRouteImport } from './routes/_espace'
 import { Route as EspaceAccueilRouteImport } from './routes/_espace.accueil'
 import { Route as EspaceAgentEmailRouteImport } from './routes/_espace.agent-email'
+import { Route as EspaceCodesClientsRouteImport } from './routes/_espace.codes-clients'
 import { Route as EspaceCodesRegimesRouteImport } from './routes/_espace.codes-regimes'
 import { Route as EspaceListeFinanceRouteImport } from './routes/_espace.liste-finance'
-import { Route as EspaceMesDossiersRouteImport } from './routes/_espace.mes-dossiers'
 import { Route as EspaceParametresRouteImport } from './routes/_espace.parametres'
 import { Route as EspaceRapportsRouteImport } from './routes/_espace.rapports'
 import { Route as EspaceUtilisateursRouteImport } from './routes/_espace.utilisateurs'
@@ -25,6 +25,8 @@ import { Route as EspaceDeclarantsIndexRouteImport } from './routes/_espace.decl
 import { Route as EspaceDeclarantsDeclarantIdRouteImport } from './routes/_espace.declarants.$declarantId'
 import { Route as EspaceMainsLeveesIndexRouteImport } from './routes/_espace.mains-levees.index'
 import { Route as EspaceMainsLeveesReferenceRouteImport } from './routes/_espace.mains-levees.$reference'
+import { Route as EspaceMesDossiersIndexRouteImport } from './routes/_espace.mes-dossiers.index'
+import { Route as EspaceMesDossiersReferenceRouteImport } from './routes/_espace.mes-dossiers.$reference'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -45,6 +47,11 @@ const EspaceAgentEmailRoute = EspaceAgentEmailRouteImport.update({
   path: '/agent-email',
   getParentRoute: () => EspaceRoute,
 } as any)
+const EspaceCodesClientsRoute = EspaceCodesClientsRouteImport.update({
+  id: '/codes-clients',
+  path: '/codes-clients',
+  getParentRoute: () => EspaceRoute,
+} as any)
 const EspaceCodesRegimesRoute = EspaceCodesRegimesRouteImport.update({
   id: '/codes-regimes',
   path: '/codes-regimes',
@@ -53,11 +60,6 @@ const EspaceCodesRegimesRoute = EspaceCodesRegimesRouteImport.update({
 const EspaceListeFinanceRoute = EspaceListeFinanceRouteImport.update({
   id: '/liste-finance',
   path: '/liste-finance',
-  getParentRoute: () => EspaceRoute,
-} as any)
-const EspaceMesDossiersRoute = EspaceMesDossiersRouteImport.update({
-  id: '/mes-dossiers',
-  path: '/mes-dossiers',
   getParentRoute: () => EspaceRoute,
 } as any)
 const EspaceParametresRoute = EspaceParametresRouteImport.update({
@@ -107,40 +109,55 @@ const EspaceMainsLeveesReferenceRoute =
     path: '/mains-levees/$reference',
     getParentRoute: () => EspaceRoute,
   } as any)
+const EspaceMesDossiersIndexRoute = EspaceMesDossiersIndexRouteImport.update({
+  id: '/mes-dossiers/',
+  path: '/mes-dossiers/',
+  getParentRoute: () => EspaceRoute,
+} as any)
+const EspaceMesDossiersReferenceRoute =
+  EspaceMesDossiersReferenceRouteImport.update({
+    id: '/mes-dossiers/$reference',
+    path: '/mes-dossiers/$reference',
+    getParentRoute: () => EspaceRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/accueil': typeof EspaceAccueilRoute
   '/agent-email': typeof EspaceAgentEmailRoute
+  '/codes-clients': typeof EspaceCodesClientsRoute
   '/codes-regimes': typeof EspaceCodesRegimesRoute
   '/liste-finance': typeof EspaceListeFinanceRoute
-  '/mes-dossiers': typeof EspaceMesDossiersRoute
   '/parametres': typeof EspaceParametresRoute
   '/rapports': typeof EspaceRapportsRoute
   '/utilisateurs': typeof EspaceUtilisateursRoute
   '/clients/$clientId': typeof EspaceClientsClientIdRoute
   '/declarants/$declarantId': typeof EspaceDeclarantsDeclarantIdRoute
   '/mains-levees/$reference': typeof EspaceMainsLeveesReferenceRoute
+  '/mes-dossiers/$reference': typeof EspaceMesDossiersReferenceRoute
   '/clients/': typeof EspaceClientsIndexRoute
   '/declarants/': typeof EspaceDeclarantsIndexRoute
   '/mains-levees/': typeof EspaceMainsLeveesIndexRoute
+  '/mes-dossiers/': typeof EspaceMesDossiersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/accueil': typeof EspaceAccueilRoute
   '/agent-email': typeof EspaceAgentEmailRoute
+  '/codes-clients': typeof EspaceCodesClientsRoute
   '/codes-regimes': typeof EspaceCodesRegimesRoute
   '/liste-finance': typeof EspaceListeFinanceRoute
-  '/mes-dossiers': typeof EspaceMesDossiersRoute
   '/parametres': typeof EspaceParametresRoute
   '/rapports': typeof EspaceRapportsRoute
   '/utilisateurs': typeof EspaceUtilisateursRoute
   '/clients/$clientId': typeof EspaceClientsClientIdRoute
   '/declarants/$declarantId': typeof EspaceDeclarantsDeclarantIdRoute
   '/mains-levees/$reference': typeof EspaceMainsLeveesReferenceRoute
+  '/mes-dossiers/$reference': typeof EspaceMesDossiersReferenceRoute
   '/clients': typeof EspaceClientsIndexRoute
   '/declarants': typeof EspaceDeclarantsIndexRoute
   '/mains-levees': typeof EspaceMainsLeveesIndexRoute
+  '/mes-dossiers': typeof EspaceMesDossiersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -148,18 +165,20 @@ export interface FileRoutesById {
   '/_espace': typeof EspaceRouteWithChildren
   '/_espace/accueil': typeof EspaceAccueilRoute
   '/_espace/agent-email': typeof EspaceAgentEmailRoute
+  '/_espace/codes-clients': typeof EspaceCodesClientsRoute
   '/_espace/codes-regimes': typeof EspaceCodesRegimesRoute
   '/_espace/liste-finance': typeof EspaceListeFinanceRoute
-  '/_espace/mes-dossiers': typeof EspaceMesDossiersRoute
   '/_espace/parametres': typeof EspaceParametresRoute
   '/_espace/rapports': typeof EspaceRapportsRoute
   '/_espace/utilisateurs': typeof EspaceUtilisateursRoute
   '/_espace/clients/$clientId': typeof EspaceClientsClientIdRoute
   '/_espace/declarants/$declarantId': typeof EspaceDeclarantsDeclarantIdRoute
   '/_espace/mains-levees/$reference': typeof EspaceMainsLeveesReferenceRoute
+  '/_espace/mes-dossiers/$reference': typeof EspaceMesDossiersReferenceRoute
   '/_espace/clients/': typeof EspaceClientsIndexRoute
   '/_espace/declarants/': typeof EspaceDeclarantsIndexRoute
   '/_espace/mains-levees/': typeof EspaceMainsLeveesIndexRoute
+  '/_espace/mes-dossiers/': typeof EspaceMesDossiersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -167,53 +186,59 @@ export interface FileRouteTypes {
     | '/'
     | '/accueil'
     | '/agent-email'
+    | '/codes-clients'
     | '/codes-regimes'
     | '/liste-finance'
-    | '/mes-dossiers'
     | '/parametres'
     | '/rapports'
     | '/utilisateurs'
     | '/clients/$clientId'
     | '/declarants/$declarantId'
     | '/mains-levees/$reference'
+    | '/mes-dossiers/$reference'
     | '/clients/'
     | '/declarants/'
     | '/mains-levees/'
+    | '/mes-dossiers/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/accueil'
     | '/agent-email'
+    | '/codes-clients'
     | '/codes-regimes'
     | '/liste-finance'
-    | '/mes-dossiers'
     | '/parametres'
     | '/rapports'
     | '/utilisateurs'
     | '/clients/$clientId'
     | '/declarants/$declarantId'
     | '/mains-levees/$reference'
+    | '/mes-dossiers/$reference'
     | '/clients'
     | '/declarants'
     | '/mains-levees'
+    | '/mes-dossiers'
   id:
     | '__root__'
     | '/'
     | '/_espace'
     | '/_espace/accueil'
     | '/_espace/agent-email'
+    | '/_espace/codes-clients'
     | '/_espace/codes-regimes'
     | '/_espace/liste-finance'
-    | '/_espace/mes-dossiers'
     | '/_espace/parametres'
     | '/_espace/rapports'
     | '/_espace/utilisateurs'
     | '/_espace/clients/$clientId'
     | '/_espace/declarants/$declarantId'
     | '/_espace/mains-levees/$reference'
+    | '/_espace/mes-dossiers/$reference'
     | '/_espace/clients/'
     | '/_espace/declarants/'
     | '/_espace/mains-levees/'
+    | '/_espace/mes-dossiers/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -251,6 +276,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EspaceAgentEmailRouteImport
       parentRoute: typeof EspaceRoute
     }
+    '/_espace/codes-clients': {
+      id: '/_espace/codes-clients'
+      path: '/codes-clients'
+      fullPath: '/codes-clients'
+      preLoaderRoute: typeof EspaceCodesClientsRouteImport
+      parentRoute: typeof EspaceRoute
+    }
     '/_espace/codes-regimes': {
       id: '/_espace/codes-regimes'
       path: '/codes-regimes'
@@ -263,13 +295,6 @@ declare module '@tanstack/react-router' {
       path: '/liste-finance'
       fullPath: '/liste-finance'
       preLoaderRoute: typeof EspaceListeFinanceRouteImport
-      parentRoute: typeof EspaceRoute
-    }
-    '/_espace/mes-dossiers': {
-      id: '/_espace/mes-dossiers'
-      path: '/mes-dossiers'
-      fullPath: '/mes-dossiers'
-      preLoaderRoute: typeof EspaceMesDossiersRouteImport
       parentRoute: typeof EspaceRoute
     }
     '/_espace/parametres': {
@@ -335,41 +360,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EspaceMainsLeveesReferenceRouteImport
       parentRoute: typeof EspaceRoute
     }
+    '/_espace/mes-dossiers/': {
+      id: '/_espace/mes-dossiers/'
+      path: '/mes-dossiers'
+      fullPath: '/mes-dossiers/'
+      preLoaderRoute: typeof EspaceMesDossiersIndexRouteImport
+      parentRoute: typeof EspaceRoute
+    }
+    '/_espace/mes-dossiers/$reference': {
+      id: '/_espace/mes-dossiers/$reference'
+      path: '/mes-dossiers/$reference'
+      fullPath: '/mes-dossiers/$reference'
+      preLoaderRoute: typeof EspaceMesDossiersReferenceRouteImport
+      parentRoute: typeof EspaceRoute
+    }
   }
 }
 
 interface EspaceRouteChildren {
   EspaceAccueilRoute: typeof EspaceAccueilRoute
   EspaceAgentEmailRoute: typeof EspaceAgentEmailRoute
+  EspaceCodesClientsRoute: typeof EspaceCodesClientsRoute
   EspaceCodesRegimesRoute: typeof EspaceCodesRegimesRoute
   EspaceListeFinanceRoute: typeof EspaceListeFinanceRoute
-  EspaceMesDossiersRoute: typeof EspaceMesDossiersRoute
   EspaceParametresRoute: typeof EspaceParametresRoute
   EspaceRapportsRoute: typeof EspaceRapportsRoute
   EspaceUtilisateursRoute: typeof EspaceUtilisateursRoute
   EspaceClientsClientIdRoute: typeof EspaceClientsClientIdRoute
   EspaceDeclarantsDeclarantIdRoute: typeof EspaceDeclarantsDeclarantIdRoute
   EspaceMainsLeveesReferenceRoute: typeof EspaceMainsLeveesReferenceRoute
+  EspaceMesDossiersReferenceRoute: typeof EspaceMesDossiersReferenceRoute
   EspaceClientsIndexRoute: typeof EspaceClientsIndexRoute
   EspaceDeclarantsIndexRoute: typeof EspaceDeclarantsIndexRoute
   EspaceMainsLeveesIndexRoute: typeof EspaceMainsLeveesIndexRoute
+  EspaceMesDossiersIndexRoute: typeof EspaceMesDossiersIndexRoute
 }
 
 const EspaceRouteChildren: EspaceRouteChildren = {
   EspaceAccueilRoute: EspaceAccueilRoute,
   EspaceAgentEmailRoute: EspaceAgentEmailRoute,
+  EspaceCodesClientsRoute: EspaceCodesClientsRoute,
   EspaceCodesRegimesRoute: EspaceCodesRegimesRoute,
   EspaceListeFinanceRoute: EspaceListeFinanceRoute,
-  EspaceMesDossiersRoute: EspaceMesDossiersRoute,
   EspaceParametresRoute: EspaceParametresRoute,
   EspaceRapportsRoute: EspaceRapportsRoute,
   EspaceUtilisateursRoute: EspaceUtilisateursRoute,
   EspaceClientsClientIdRoute: EspaceClientsClientIdRoute,
   EspaceDeclarantsDeclarantIdRoute: EspaceDeclarantsDeclarantIdRoute,
   EspaceMainsLeveesReferenceRoute: EspaceMainsLeveesReferenceRoute,
+  EspaceMesDossiersReferenceRoute: EspaceMesDossiersReferenceRoute,
   EspaceClientsIndexRoute: EspaceClientsIndexRoute,
   EspaceDeclarantsIndexRoute: EspaceDeclarantsIndexRoute,
   EspaceMainsLeveesIndexRoute: EspaceMainsLeveesIndexRoute,
+  EspaceMesDossiersIndexRoute: EspaceMesDossiersIndexRoute,
 }
 
 const EspaceRouteWithChildren =

@@ -197,7 +197,7 @@ function AgentEmailPage() {
         footer={
           <>
             {selected?.mainLeveeId ? (
-              <Link to="/mains-levees">
+              <Link to="/mes-dossiers">
                 <Btn variant="outline">Voir les dossiers</Btn>
               </Link>
             ) : null}

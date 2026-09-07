@@ -129,7 +129,7 @@ function AccueilPage() {
           description="Dossiers bloqués ou nécessitant une validation manuelle."
           bodyClassName="p-0"
           actions={
-            <Link to="/mains-levees" className="text-[12.5px] font-medium text-primary hover:underline">
+            <Link to="/mes-dossiers" className="text-[12.5px] font-medium text-primary hover:underline">
               Voir tout
             </Link>
           }
@@ -154,7 +154,7 @@ function AccueilPage() {
                   </div>
                   <div className="flex shrink-0 items-center gap-3">
                     <span className="mono text-[12.5px] text-muted-foreground">{formatTime(m.receivedAt)}</span>
-                    <Link to="/mains-levees/$reference" params={{ reference: m.reference }}>
+                    <Link to="/mes-dossiers/$reference" params={{ reference: m.reference }}>
                       <Btn variant="outline" size="sm">
                         Examiner
                       </Btn>
@@ -177,7 +177,7 @@ function AccueilPage() {
           <p className="mono mt-3 text-[26px] font-semibold text-warning">
             {db.mainLevees.filter((m) => m.deposited && !m.receivedByFinance).length}
           </p>
-          <Link to="/liste-finance" className="mt-2 inline-flex text-[12.5px] font-medium text-primary hover:underline">
+          <Link to="/mes-dossiers" className="mt-2 inline-flex text-[12.5px] font-medium text-primary hover:underline">
             Ouvrir la liste Finance
           </Link>
         </Surface>
