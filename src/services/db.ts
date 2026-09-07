@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
 import { seedDB, TODAY } from "@/data/seed";
+import { defaultMappingSheet } from "@/data/mappings";
 import type {
   Client,
   CustomsRegime,
@@ -8,6 +9,7 @@ import type {
   EmailRecord,
   IdentificationSource,
   MainLevee,
+  MappingRow,
   Settings,
 } from "@/types";
 import { identifyCustomer, nowISO } from "./business";
@@ -17,7 +19,11 @@ const KEY = "globitrans.db.v1";
 function load(): DB {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return JSON.parse(raw) as DB;
+    if (raw) {
+      const parsed = JSON.parse(raw) as DB;
+      if (!parsed.mappings?.columns?.length) parsed.mappings = defaultMappingSheet();
+      return parsed;
+    }
   } catch {
     /* ignore */
   }
@@ -179,6 +185,99 @@ export function resolveAnomaly(reference: string, clientId: string, author: stri
     return m;
   });
   logActivity(next, `Anomalie résolue sur ${reference}.`, author);
+  commit(next);
+}
+
+export function assignDossierDeclarant(reference: string, declarantId: string, author: string) {
+  const next = structuredClone(state);
+  const at = nowISO();
+  const declarant = next.declarants.find((d) => d.id === declarantId);
+  patchMainLevees(next, [reference], (m) => {
+    m.declarantId = declarantId;
+    if (m.anomaly === "DECLARANT_NOT_ASSIGNED") {
+      delete m.anomaly;
+      delete m.anomalyMessage;
+    }
+    if (!m.deposited && m.clientId && m.status !== "REVIEW_REQUIRED") m.status = "TO_DEPOSIT";
+    m.history = [
+      ...m.history,
+      { at, label: `Déclarant affecté : ${declarant?.firstName} ${declarant?.lastName}.`, author },
+    ];
+    return m;
+  });
+  logActivity(next, `Déclarant affecté au dossier ${reference}.`, author);
+  commit(next);
+}
+
+/* ---------- Mots-clés Agent Email ---------- */
+
+export function addKeyword(keyword: string): { ok: boolean; error?: string } {
+  const value = keyword.trim();
+  if (!value) return { ok: false, error: "Le mot-clé ne peut pas être vide." };
+  const next = structuredClone(state);
+  if (next.settings.keywords.some((k) => k.toLowerCase() === value.toLowerCase()))
+    return { ok: false, error: "Ce mot-clé existe déjà." };
+  next.settings.keywords = [...next.settings.keywords, value];
+  logActivity(next, `Mot-clé de détection « ${value} » ajouté.`, "Administration");
+  commit(next);
+  return { ok: true };
+}
+
+export function removeKeyword(keyword: string) {
+  const next = structuredClone(state);
+  next.settings.keywords = next.settings.keywords.filter((k) => k !== keyword);
+  logActivity(next, `Mot-clé de détection « ${keyword} » supprimé.`, "Administration");
+  commit(next);
+}
+
+/* ---------- Référentiel Codes régimes / Clients ---------- */
+
+const newMappingId = () => `MAP-${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+
+export function addMappingRow(): string {
+  const next = structuredClone(state);
+  const id = newMappingId();
+  const values: Record<string, string> = {};
+  next.mappings.columns.forEach((c) => (values[c] = ""));
+  next.mappings.rows = [{ id, values }, ...next.mappings.rows];
+  commit(next);
+  return id;
+}
+
+export function updateMappingCell(rowId: string, column: string, value: string) {
+  const next = structuredClone(state);
+  next.mappings.rows = next.mappings.rows.map((r) =>
+    r.id === rowId ? { ...r, values: { ...r.values, [column]: value } } : r,
+  );
+  commit(next);
+}
+
+export function deleteMappingRow(rowId: string) {
+  const next = structuredClone(state);
+  next.mappings.rows = next.mappings.rows.filter((r) => r.id !== rowId);
+  commit(next);
+}
+
+export function importMappingSheet(
+  columns: string[],
+  rows: MappingRow[],
+  mode: "append" | "replace",
+  fileName: string,
+  author: string,
+) {
+  const next = structuredClone(state);
+  const mergedColumns =
+    mode === "replace"
+      ? columns
+      : Array.from(new Set([...next.mappings.columns, ...columns]));
+  next.mappings = {
+    columns: mergedColumns,
+    rows: mode === "replace" ? rows : [...rows, ...next.mappings.rows],
+    fileName,
+    importedAt: nowISO(),
+  };
+  logActivity(next, `Référentiel importé depuis ${fileName} (${rows.length} lignes).`, author);
+  notify(next, "Référentiel mis à jour", `${rows.length} lignes importées depuis ${fileName}.`, "success");
   commit(next);
 }
 

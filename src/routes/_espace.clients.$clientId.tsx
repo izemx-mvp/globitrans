@@ -36,7 +36,7 @@ export const Route = createFileRoute("/_espace/clients/$clientId")({
   component: ClientDetailPage,
 });
 
-const TABS = ["Informations", "Dossiers", "Identification", "Historique"] as const;
+const TABS = ["Informations", "Dossiers", "Identification"] as const;
 
 function ClientDetailPage() {
   const { clientId } = useParams({ from: "/_espace/clients/$clientId" });
@@ -192,7 +192,7 @@ function ClientDetailPage() {
                   <Tr key={m.id}>
                     <Td>
                       <Link
-                        to="/mains-levees/$reference"
+                        to="/mes-dossiers/$reference"
                         params={{ reference: m.reference }}
                         className="mono text-[13px] font-medium text-primary hover:underline"
                       >
@@ -242,23 +242,6 @@ function ClientDetailPage() {
             />
           </Surface>
         </div>
-      ) : null}
-
-      {tab === "Historique" ? (
-        <Surface title="Historique du client">
-          <ul className="space-y-3">
-            {dossiers.slice(0, 12).map((m) => (
-              <li key={m.id} className="border-b border-border/70 pb-2.5 last:border-0">
-                <p className="text-[13.5px]">
-                  <Mono className="font-medium">{m.reference}</Mono> — {m.regimeLabel}
-                </p>
-                <p className="text-[12px] text-muted-foreground">
-                  {formatDate(m.releaseDate)} — {m.receivedByFinance ? "reçu par la Finance" : m.deposited ? "déposé" : "en attente de dépôt"}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </Surface>
       ) : null}
 
       <ClientModal open={editOpen} onClose={() => setEditOpen(false)} client={client} />

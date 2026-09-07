@@ -1,4 +1,5 @@
 import { REGIMES } from "./regimes";
+import { defaultMappingSheet } from "./mappings";
 import type {
   Client,
   DB,
@@ -371,6 +372,7 @@ export function seedDB(): DB {
     clients,
     declarants,
     regimes: REGIMES,
+    mappings: defaultMappingSheet(),
     emails,
     mainLevees,
     notifications,

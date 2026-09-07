@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, X } from "lucide-react";
 import {
   Chip,
   EmptyState,
@@ -15,8 +15,8 @@ import {
   Th,
   Tr,
 } from "@/components/app/bits";
-import { Btn, Modal, inputClass, selectClass } from "@/components/app/dialogs";
-import { syncEmails, updateSettings, useDB } from "@/services/db";
+import { Btn, Field, Modal, inputClass, selectClass } from "@/components/app/dialogs";
+import { addKeyword, removeKeyword, syncEmails, updateSettings, useDB } from "@/services/db";
 import { useSession } from "@/services/auth";
 import { formatDateTime, formatTime } from "@/services/business";
 import type { EmailRecord } from "@/types";
@@ -49,6 +49,9 @@ function AgentEmailPage() {
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<EmailRecord | null>(null);
   const [busy, setBusy] = useState(false);
+  const [keywordOpen, setKeywordOpen] = useState(false);
+  const [keyword, setKeyword] = useState("");
+  const isAdmin = session?.role === "ADMIN";
 
   const rows = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -177,17 +180,86 @@ function AgentEmailPage() {
             <InfoRow label="Prochaine synchro." value={formatDateTime(db.settings.nextSync)} />
             <InfoRow label="Formats acceptés" value={db.settings.formats.join(", ")} />
           </Surface>
-          <Surface title="Mots-clés de détection">
+          <Surface
+            title="Mots-clés de détection"
+            description="Termes recherchés dans l'objet des emails pour identifier une main levée."
+            actions={
+              isAdmin ? (
+                <Btn variant="outline" size="sm" onClick={() => setKeywordOpen(true)}>
+                  <Plus className="size-4" /> Ajouter
+                </Btn>
+              ) : undefined
+            }
+          >
             <div className="flex flex-wrap gap-1.5">
               {db.settings.keywords.map((k) => (
-                <Chip key={k} tone="blue">
+                <span
+                  key={k}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-corporate/30 bg-soft px-2.5 py-1 text-[12px] font-medium text-deep"
+                >
                   {k}
-                </Chip>
+                  {isAdmin ? (
+                    <button
+                      onClick={() => {
+                        removeKeyword(k);
+                        toast.success(`Mot-clé « ${k} » supprimé.`);
+                      }}
+                      title="Supprimer ce mot-clé"
+                      className="text-muted-foreground transition-colors duration-150 hover:text-danger"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  ) : null}
+                </span>
               ))}
+              {db.settings.keywords.length === 0 ? (
+                <p className="text-[12.5px] text-muted-foreground">Aucun mot-clé configuré.</p>
+              ) : null}
             </div>
           </Surface>
         </div>
       </div>
+
+      <Modal
+        open={keywordOpen}
+        onClose={() => {
+          setKeywordOpen(false);
+          setKeyword("");
+        }}
+        title="Ajouter un mot-clé de détection"
+        description="Le mot-clé est recherché dans l'objet des emails reçus par l'Agent Email."
+        footer={
+          <>
+            <Btn
+              variant="outline"
+              onClick={() => {
+                setKeywordOpen(false);
+                setKeyword("");
+              }}
+            >
+              Annuler
+            </Btn>
+            <Btn
+              onClick={() => {
+                const res = addKeyword(keyword);
+                if (!res.ok) {
+                  toast.error(res.error ?? "Mot-clé invalide.");
+                  return;
+                }
+                setKeyword("");
+                setKeywordOpen(false);
+                toast.success("Mot-clé ajouté.");
+              }}
+            >
+              Ajouter le mot-clé
+            </Btn>
+          </>
+        }
+      >
+        <Field label="Mot-clé" hint="Exemple : bon à enlever, main levée, DUM.">
+          <input value={keyword} onChange={(e) => setKeyword(e.target.value)} className={inputClass} placeholder="main levée" />
+        </Field>
+      </Modal>
 
       <Modal
         open={!!selected}
@@ -197,7 +269,7 @@ function AgentEmailPage() {
         footer={
           <>
             {selected?.mainLeveeId ? (
-              <Link to="/mains-levees">
+              <Link to="/mes-dossiers">
                 <Btn variant="outline">Voir les dossiers</Btn>
               </Link>
             ) : null}
