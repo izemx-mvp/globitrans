@@ -34,7 +34,7 @@ export const Route = createFileRoute("/_espace/declarants/$declarantId")({
   component: DeclarantDetailPage,
 });
 
-const TABS = ["Vue générale", "Clients", "Dossiers", "Historique"] as const;
+const TABS = ["Vue générale", "Clients", "Dossiers"] as const;
 
 function DeclarantDetailPage() {
   const { declarantId } = useParams({ from: "/_espace/declarants/$declarantId" });
@@ -238,26 +238,6 @@ function DeclarantDetailPage() {
         </div>
       ) : null}
 
-      {tab === "Historique" ? (
-        <Surface title="Activité du déclarant">
-          <ul className="space-y-3">
-            {all
-              .filter((m) => m.depositedAt)
-              .slice(0, 15)
-              .map((m) => (
-                <li key={m.id} className="border-b border-border/70 pb-2.5 last:border-0">
-                  <p className="text-[13.5px]">
-                    Dépôt du dossier <Mono className="font-medium">{m.reference}</Mono>
-                  </p>
-                  <p className="text-[12px] text-muted-foreground">
-                    {formatDate(m.releaseDate)} à {formatTime(m.depositedAt)} —{" "}
-                    {m.receivedByFinance ? `réceptionné par ${m.receivedBy}` : "en attente de réception"}
-                  </p>
-                </li>
-              ))}
-          </ul>
-        </Surface>
-      ) : null}
     </>
   );
 }

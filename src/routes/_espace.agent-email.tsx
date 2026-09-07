@@ -177,13 +177,41 @@ function AgentEmailPage() {
             <InfoRow label="Prochaine synchro." value={formatDateTime(db.settings.nextSync)} />
             <InfoRow label="Formats acceptés" value={db.settings.formats.join(", ")} />
           </Surface>
-          <Surface title="Mots-clés de détection">
+          <Surface
+            title="Mots-clés de détection"
+            description="Termes recherchés dans l'objet des emails pour identifier une main levée."
+            actions={
+              isAdmin ? (
+                <Btn variant="outline" size="sm" onClick={() => setKeywordOpen(true)}>
+                  <Plus className="size-4" /> Ajouter
+                </Btn>
+              ) : undefined
+            }
+          >
             <div className="flex flex-wrap gap-1.5">
               {db.settings.keywords.map((k) => (
-                <Chip key={k} tone="blue">
+                <span
+                  key={k}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-corporate/30 bg-soft px-2.5 py-1 text-[12px] font-medium text-deep"
+                >
                   {k}
-                </Chip>
+                  {isAdmin ? (
+                    <button
+                      onClick={() => {
+                        removeKeyword(k);
+                        toast.success(`Mot-clé « ${k} » supprimé.`);
+                      }}
+                      title="Supprimer ce mot-clé"
+                      className="text-muted-foreground transition-colors duration-150 hover:text-danger"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  ) : null}
+                </span>
               ))}
+              {db.settings.keywords.length === 0 ? (
+                <p className="text-[12.5px] text-muted-foreground">Aucun mot-clé configuré.</p>
+              ) : null}
             </div>
           </Surface>
         </div>
