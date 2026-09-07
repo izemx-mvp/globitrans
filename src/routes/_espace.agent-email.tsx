@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, X } from "lucide-react";
 import {
   Chip,
   EmptyState,
@@ -15,8 +15,8 @@ import {
   Th,
   Tr,
 } from "@/components/app/bits";
-import { Btn, Modal, inputClass, selectClass } from "@/components/app/dialogs";
-import { syncEmails, updateSettings, useDB } from "@/services/db";
+import { Btn, Field, Modal, inputClass, selectClass } from "@/components/app/dialogs";
+import { addKeyword, removeKeyword, syncEmails, updateSettings, useDB } from "@/services/db";
 import { useSession } from "@/services/auth";
 import { formatDateTime, formatTime } from "@/services/business";
 import type { EmailRecord } from "@/types";
@@ -49,6 +49,9 @@ function AgentEmailPage() {
   const [q, setQ] = useState("");
   const [selected, setSelected] = useState<EmailRecord | null>(null);
   const [busy, setBusy] = useState(false);
+  const [keywordOpen, setKeywordOpen] = useState(false);
+  const [keyword, setKeyword] = useState("");
+  const isAdmin = session?.role === "ADMIN";
 
   const rows = useMemo(() => {
     const term = q.trim().toLowerCase();
@@ -216,6 +219,47 @@ function AgentEmailPage() {
           </Surface>
         </div>
       </div>
+
+      <Modal
+        open={keywordOpen}
+        onClose={() => {
+          setKeywordOpen(false);
+          setKeyword("");
+        }}
+        title="Ajouter un mot-clé de détection"
+        description="Le mot-clé est recherché dans l'objet des emails reçus par l'Agent Email."
+        footer={
+          <>
+            <Btn
+              variant="outline"
+              onClick={() => {
+                setKeywordOpen(false);
+                setKeyword("");
+              }}
+            >
+              Annuler
+            </Btn>
+            <Btn
+              onClick={() => {
+                const res = addKeyword(keyword);
+                if (!res.ok) {
+                  toast.error(res.error ?? "Mot-clé invalide.");
+                  return;
+                }
+                setKeyword("");
+                setKeywordOpen(false);
+                toast.success("Mot-clé ajouté.");
+              }}
+            >
+              Ajouter le mot-clé
+            </Btn>
+          </>
+        }
+      >
+        <Field label="Mot-clé" hint="Exemple : bon à enlever, main levée, DUM.">
+          <input value={keyword} onChange={(e) => setKeyword(e.target.value)} className={inputClass} placeholder="main levée" />
+        </Field>
+      </Modal>
 
       <Modal
         open={!!selected}
