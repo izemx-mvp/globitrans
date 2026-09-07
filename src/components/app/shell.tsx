@@ -3,17 +3,14 @@ import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   Bell,
   Building2,
-  ChartBarBig,
   ChevronsLeft,
   ChevronsRight,
   ClipboardList,
-  Files,
   LayoutDashboard,
-  Landmark,
   LogOut,
   MailCheck,
-  ScrollText,
   Search,
+  Table2,
   Settings,
   ShieldCheck,
   UserCog,
@@ -21,56 +18,56 @@ import {
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useDB, markNotificationRead, TODAY } from "@/services/db";
+import { useDB, markNotificationRead } from "@/services/db";
 import { fullName, logout, useSession, type Session } from "@/services/auth";
 import { ROLE_LABELS, clientName, declarantName, formatTime } from "@/services/business";
 import { Avatar, Chip } from "./bits";
-import type { Role } from "@/types";
+import type { DB, Role } from "@/types";
 
 interface NavItem {
   to: string;
   label: string;
-  icon: typeof Files;
+  icon: typeof Table2;
   roles: Role[];
   badge?: number;
 }
 
 export const PATH_LABELS: Record<string, string> = {
   "/accueil": "Accueil",
-  "/mains-levees": "Mains levées",
-  "/liste-finance": "Liste Finance",
   "/mes-dossiers": "Mes dossiers",
   "/agent-email": "Agent Email",
+  "/codes-clients": "Codes régimes / Clients",
   "/clients": "Clients",
   "/declarants": "Déclarants",
-  "/codes-regimes": "Codes régimes",
-  "/rapports": "Rapports & Exports",
   "/utilisateurs": "Utilisateurs",
   "/parametres": "Paramètres",
 };
 
 export const ROUTE_ROLES: Record<string, Role[]> = {
   "/accueil": ["ADMIN", "FINANCE", "DECLARANT"],
-  "/mains-levees": ["ADMIN", "FINANCE", "DECLARANT"],
-  "/liste-finance": ["ADMIN", "FINANCE"],
-  "/mes-dossiers": ["ADMIN", "DECLARANT"],
-  "/agent-email": ["ADMIN"],
+  "/mes-dossiers": ["ADMIN", "FINANCE", "DECLARANT"],
+  "/agent-email": ["ADMIN", "FINANCE"],
+  "/codes-clients": ["ADMIN", "FINANCE"],
   "/clients": ["ADMIN", "FINANCE", "DECLARANT"],
   "/declarants": ["ADMIN", "FINANCE"],
-  "/codes-regimes": ["ADMIN", "FINANCE"],
-  "/rapports": ["ADMIN", "FINANCE", "DECLARANT"],
   "/utilisateurs": ["ADMIN"],
   "/parametres": ["ADMIN"],
 };
 
+/** Compteur du module Mes dossiers, calculé selon le rôle connecté. */
+export function dossiersCounter(db: DB, role?: Role, declarantId?: string) {
+  if (role === "FINANCE") return db.mainLevees.filter((m) => m.deposited && !m.receivedByFinance).length;
+  if (role === "DECLARANT")
+    return db.mainLevees.filter((m) => m.declarantId === declarantId && !m.receivedByFinance).length;
+  return db.mainLevees.filter(
+    (m) => !m.receivedByFinance || m.status === "REVIEW_REQUIRED" || !m.declarantId,
+  ).length;
+}
+
 function useNav(): { section: string; items: NavItem[] }[] {
   const db = useDB();
   const session = useSession();
-  const today = db.mainLevees.filter((m) => m.releaseDate === TODAY);
-  const toReceive = db.mainLevees.filter((m) => m.deposited && !m.receivedByFinance).length;
-  const mine = db.mainLevees.filter(
-    (m) => m.declarantId === session?.declarantId && !m.deposited,
-  ).length;
+  const counter = dossiersCounter(db, session?.role, session?.declarantId);
 
   return [
     {
@@ -80,26 +77,33 @@ function useNav(): { section: string; items: NavItem[] }[] {
     {
       section: "Opérations",
       items: [
-        { to: "/mains-levees", label: "Mains levées", icon: Files, roles: ROUTE_ROLES["/mains-levees"]!, badge: today.length },
-        { to: "/liste-finance", label: "Liste Finance", icon: Landmark, roles: ROUTE_ROLES["/liste-finance"]!, badge: toReceive },
-        { to: "/mes-dossiers", label: "Mes dossiers", icon: ClipboardList, roles: ROUTE_ROLES["/mes-dossiers"]!, badge: mine },
+        {
+          to: "/mes-dossiers",
+          label: "Mes dossiers",
+          icon: ClipboardList,
+          roles: ROUTE_ROLES["/mes-dossiers"]!,
+          badge: counter,
+        },
       ],
     },
     {
       section: "Automatisation",
-      items: [{ to: "/agent-email", label: "Agent Email", icon: MailCheck, roles: ROUTE_ROLES["/agent-email"]! }],
+      items: [
+        { to: "/agent-email", label: "Agent Email", icon: MailCheck, roles: ROUTE_ROLES["/agent-email"]! },
+        {
+          to: "/codes-clients",
+          label: "Codes régimes / Clients",
+          icon: Table2,
+          roles: ROUTE_ROLES["/codes-clients"]!,
+        },
+      ],
     },
     {
       section: "Référentiel",
       items: [
         { to: "/clients", label: "Clients", icon: Building2, roles: ROUTE_ROLES["/clients"]! },
         { to: "/declarants", label: "Déclarants", icon: Users, roles: ROUTE_ROLES["/declarants"]! },
-        { to: "/codes-regimes", label: "Codes régimes", icon: ScrollText, roles: ROUTE_ROLES["/codes-regimes"]! },
       ],
-    },
-    {
-      section: "Analyse",
-      items: [{ to: "/rapports", label: "Rapports & Exports", icon: ChartBarBig, roles: ROUTE_ROLES["/rapports"]! }],
     },
     {
       section: "Administration",
@@ -311,7 +315,7 @@ function GlobalSearch() {
               {results.dossiers.map((m) => (
                 <button
                   key={m.id}
-                  onClick={() => go(`/mains-levees/${m.reference}`)}
+                  onClick={() => go(`/mes-dossiers/${m.reference}`)}
                   className="flex w-full items-center justify-between gap-3 px-4 py-1.5 text-left hover:bg-muted"
                 >
                   <span className="mono text-[13px] font-medium">{m.reference}</span>

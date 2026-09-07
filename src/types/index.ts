@@ -152,6 +152,18 @@ export interface Settings {
   notifyDeposit: boolean;
 }
 
+export interface MappingRow {
+  id: string;
+  values: Record<string, string>;
+}
+
+export interface MappingSheet {
+  columns: string[];
+  rows: MappingRow[];
+  fileName?: string | undefined;
+  importedAt?: string | undefined;
+}
+
 export interface DB {
   users: User[];
   clients: Client[];
@@ -162,4 +174,5 @@ export interface DB {
   notifications: Notification[];
   activity: HistoryEntry[];
   settings: Settings;
+  mappings: MappingSheet;
 }
