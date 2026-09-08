@@ -6,6 +6,7 @@ import {
   ArrowUpAZ,
   Download,
   Plus,
+  Search,
   Table2,
   Trash2,
   Upload,
@@ -100,6 +101,10 @@ function CodesClientsPage() {
   const [q, setQ] = useState("");
   const [filterColumn, setFilterColumn] = useState("");
   const [filterValue, setFilterValue] = useState("");
+  const [regimeFilter, setRegimeFilter] = useState("");
+  const [sourceFilter, setSourceFilter] = useState("");
+  const [clientFilter, setClientFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
   const [sortCol, setSortCol] = useState(REGIME_COL);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [page, setPage] = useState(1);
@@ -117,6 +122,10 @@ function CodesClientsPage() {
         const v = (r.values[filterColumn] ?? "").toLowerCase();
         if (!v.includes(filterValue.toLowerCase())) return false;
       }
+      if (regimeFilter && (r.values[REGIME_COL] ?? "") !== regimeFilter) return false;
+      if (sourceFilter && (r.values["Source d'identification"] ?? "") !== sourceFilter) return false;
+      if (clientFilter && (r.values["Client"] ?? "") !== clientFilter) return false;
+      if (statusFilter && (r.values["Statut"] ?? "") !== statusFilter) return false;
       return true;
     });
     return [...list].sort((a, b) => {
@@ -124,7 +133,7 @@ function CodesClientsPage() {
       const bv = b.values[sortCol] ?? "";
       return sortDir === "asc" ? av.localeCompare(bv, "fr") : bv.localeCompare(av, "fr");
     });
-  }, [sheet.rows, q, filterColumn, filterValue, sortCol, sortDir]);
+  }, [sheet.rows, q, filterColumn, filterValue, regimeFilter, sourceFilter, clientFilter, statusFilter, sortCol, sortDir]);
 
   const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const current = Math.min(page, pages);
@@ -132,6 +141,18 @@ function CodesClientsPage() {
 
   const mappedClients = sheet.rows.filter((r) => (r.values["Client"] ?? "").trim() !== "").length;
   const unusedRows = sheet.rows.filter((r) => (r.values["Statut"] ?? "") === "Non utilisé").length;
+  const regimeOptions = useMemo(
+    () => Array.from(new Set(sheet.rows.map((r) => r.values[REGIME_COL] ?? "").filter(Boolean))).sort(),
+    [sheet.rows],
+  );
+  const clientOptions = useMemo(
+    () => Array.from(new Set(sheet.rows.map((r) => r.values["Client"] ?? "").filter(Boolean))).sort(),
+    [sheet.rows],
+  );
+  const statusOptions = useMemo(
+    () => Array.from(new Set(sheet.rows.map((r) => r.values["Statut"] ?? "").filter(Boolean))).sort(),
+    [sheet.rows],
+  );
 
   const handleFile = async (file: File) => {
     try {
@@ -216,50 +237,86 @@ function CodesClientsPage() {
       </div>
 
       <div className="card-surface mt-4 overflow-hidden">
-        <div className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/40 px-4 py-3">
-          <input
-            value={q}
-            onChange={(e) => {
-              setQ(e.target.value);
-              setPage(1);
-            }}
-            placeholder="Rechercher un code, un client, un alias..."
-            className={`${inputClass} w-[280px]`}
-          />
+        <div className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/40 px-4 py-2.5 xl:flex-nowrap">
+          <div className="relative min-w-[260px] flex-1 xl:max-w-[340px]">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={q}
+              onChange={(e) => {
+                setQ(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Rechercher dans le référentiel..."
+              className={`${inputClass} h-10 pl-9`}
+            />
+          </div>
           <select
-            value={filterColumn}
-            onChange={(e) => setFilterColumn(e.target.value)}
-            className={`${selectClass} w-[200px]`}
-          >
-            <option value="">Filtrer une colonne</option>
-            {sheet.columns.map((c) => (
-              <option key={c} value={c}>
-                {c}
-              </option>
-            ))}
-          </select>
-          <input
-            value={filterValue}
+            value={regimeFilter}
             onChange={(e) => {
-              setFilterValue(e.target.value);
+              setRegimeFilter(e.target.value);
               setPage(1);
             }}
-            disabled={!filterColumn}
-            placeholder="Valeur contenue..."
-            className={`${inputClass} w-[190px]`}
-          />
+            className={`${selectClass} h-10 w-[140px] shrink-0 mono`}
+            aria-label="Code régime"
+          >
+            <option value="">Code régime</option>
+            {regimeOptions.map((code) => <option key={code} value={code}>{code}</option>)}
+          </select>
+          <select
+            value={sourceFilter}
+            onChange={(e) => {
+              setSourceFilter(e.target.value);
+              setPage(1);
+            }}
+            className={`${selectClass} h-10 w-[150px] shrink-0`}
+            aria-label="Source"
+          >
+            <option value="">Source</option>
+            <option value="Case 2">Case 2</option>
+            <option value="Case 8">Case 8</option>
+            <option value="Non utilisé">Non utilisé</option>
+          </select>
+          <select
+            value={clientFilter}
+            onChange={(e) => {
+              setClientFilter(e.target.value);
+              setPage(1);
+            }}
+            className={`${selectClass} h-10 w-[190px] shrink-0`}
+            aria-label="Client"
+          >
+            <option value="">Client</option>
+            {clientOptions.map((client) => <option key={client} value={client}>{client}</option>)}
+          </select>
+          <select
+            value={statusFilter}
+            onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setPage(1);
+            }}
+            className={`${selectClass} h-10 w-[150px] shrink-0`}
+            aria-label="Statut"
+          >
+            <option value="">Statut</option>
+            {statusOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+          </select>
           <Btn
             variant="ghost"
+            className="h-10"
             onClick={() => {
               setQ("");
               setFilterColumn("");
               setFilterValue("");
+              setRegimeFilter("");
+              setSourceFilter("");
+              setClientFilter("");
+              setStatusFilter("");
               setPage(1);
             }}
           >
             Réinitialiser
           </Btn>
-          <span className="ml-auto text-[12.5px] text-muted-foreground">
+          <span className="ml-auto hidden shrink-0 text-[12.5px] text-muted-foreground 2xl:inline">
             {canEdit ? "Cliquez dans une cellule pour la modifier." : "Consultation seule."}
           </span>
         </div>
