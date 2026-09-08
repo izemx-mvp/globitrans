@@ -161,7 +161,8 @@ function MesDossiersPage() {
       if (declarantId && m.declarantId !== declarantId) return false;
       if (regime && m.regimeCode !== regime) return false;
       if (source && m.identificationSource !== source) return false;
-      if (status && m.status !== status) return false;
+      if (status === "UNASSIGNED" && m.declarantId) return false;
+      if (status && status !== "UNASSIGNED" && m.status !== status) return false;
       if (reception === "received" && !m.receivedByFinance) return false;
       if (reception === "pending" && m.receivedByFinance) return false;
       return true;
@@ -279,7 +280,7 @@ function MesDossiersPage() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/40 px-4 py-2.5 xl:flex-nowrap">
-          <div className="relative min-w-[250px] flex-1 xl:max-w-[340px]">
+          <div className="relative min-w-[250px] flex-1 xl:basis-[300px] xl:max-w-[340px]">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <input
               value={q}
@@ -293,7 +294,7 @@ function MesDossiersPage() {
           </div>
           <Popover>
             <PopoverTrigger asChild>
-              <Btn variant="outline" className="h-10 w-[150px] justify-start font-normal">
+              <Btn variant="outline" className="h-10 w-[150px] flex-none justify-start font-normal">
                 <CalendarDays className="size-4 text-muted-foreground" />
                 <span className="truncate">{date ? formatDate(date) : "Date"}</span>
               </Btn>
@@ -320,7 +321,7 @@ function MesDossiersPage() {
               setClientId(e.target.value);
               setPage(1);
             }}
-            className={`${selectClass} h-10 w-[180px] shrink-0`}
+            className={`${selectClass} h-10 max-w-[180px] basis-[180px] flex-none`}
             aria-label="Client"
           >
             <option value="">Client</option>
@@ -334,7 +335,7 @@ function MesDossiersPage() {
               setDeclarantId(e.target.value);
               setPage(1);
             }}
-            className={`${selectClass} h-10 w-[180px] shrink-0`}
+            className={`${selectClass} h-10 max-w-[180px] basis-[180px] flex-none`}
             aria-label="Déclarant"
           >
             <option value="">Déclarant</option>
@@ -372,6 +373,7 @@ function MesDossiersPage() {
                     <option value="ANALYZING">Analyse en cours</option>
                     <option value="CLIENT_IDENTIFIED">Client identifié</option>
                     <option value="REVIEW_REQUIRED">À vérifier</option>
+                    <option value="UNASSIGNED">À affecter</option>
                     <option value="TO_DEPOSIT">À déposer</option>
                     <option value="DEPOSITED">Déposé</option>
                     <option value="FINANCE_RECEIVED">Reçu Finance</option>

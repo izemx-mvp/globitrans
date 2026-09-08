@@ -238,7 +238,7 @@ function CodesClientsPage() {
 
       <div className="card-surface mt-4 overflow-hidden">
         <div className="flex flex-wrap items-center gap-2 border-b border-border bg-muted/40 px-4 py-2.5 xl:flex-nowrap">
-          <div className="relative min-w-[260px] flex-1 xl:max-w-[340px]">
+          <div className="relative min-w-[260px] flex-1 xl:basis-[290px] xl:max-w-[340px]">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <input
               value={q}
@@ -256,7 +256,7 @@ function CodesClientsPage() {
               setRegimeFilter(e.target.value);
               setPage(1);
             }}
-            className={`${selectClass} h-10 w-[140px] shrink-0 mono`}
+            className={`${selectClass} h-10 max-w-[140px] basis-[140px] flex-none mono`}
             aria-label="Code régime"
           >
             <option value="">Code régime</option>
@@ -268,7 +268,7 @@ function CodesClientsPage() {
               setSourceFilter(e.target.value);
               setPage(1);
             }}
-            className={`${selectClass} h-10 w-[150px] shrink-0`}
+            className={`${selectClass} h-10 max-w-[150px] basis-[150px] flex-none`}
             aria-label="Source"
           >
             <option value="">Source</option>
@@ -282,7 +282,7 @@ function CodesClientsPage() {
               setClientFilter(e.target.value);
               setPage(1);
             }}
-            className={`${selectClass} h-10 w-[190px] shrink-0`}
+            className={`${selectClass} h-10 max-w-[190px] basis-[190px] flex-none`}
             aria-label="Client"
           >
             <option value="">Client</option>
@@ -294,7 +294,7 @@ function CodesClientsPage() {
               setStatusFilter(e.target.value);
               setPage(1);
             }}
-            className={`${selectClass} h-10 w-[150px] shrink-0`}
+            className={`${selectClass} h-10 max-w-[150px] basis-[150px] flex-none`}
             aria-label="Statut"
           >
             <option value="">Statut</option>
