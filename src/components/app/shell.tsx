@@ -439,6 +439,20 @@ function Notifications() {
   );
 }
 
+function ThemeToggle() {
+  const { theme, toggle } = useTheme();
+  return (
+    <button
+      onClick={toggle}
+      className="relative grid size-9 place-items-center rounded-md border border-border text-muted-foreground hover:bg-muted hover:text-foreground"
+      aria-label={theme === "dark" ? "Passer en mode clair" : "Passer en mode sombre"}
+      title={theme === "dark" ? "Mode clair" : "Mode sombre"}
+    >
+      {theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}
+    </button>
+  );
+}
+
 function Header({ session, breadcrumb }: { session: Session; breadcrumb: string[] }) {
   const db = useDB();
   return (
@@ -460,6 +474,7 @@ function Header({ session, breadcrumb }: { session: Session; breadcrumb: string[
           <span className="mr-1.5 size-1.5 rounded-full bg-current" />
           {db.settings.agentActive ? "Agent Email actif" : "Agent Email arrêté"}
         </Chip>
+        <ThemeToggle />
         <Notifications />
         <div className="flex items-center gap-2">
           <Avatar initials={session.avatar} />
