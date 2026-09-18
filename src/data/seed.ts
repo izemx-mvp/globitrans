@@ -396,8 +396,36 @@ export function seedDB(): DB {
       lastSync: t(TODAY, 15, 32),
       nextSync: t(TODAY, 15, 37),
       notifyNewMainLevee: true,
-      notifyAnomaly: true,
       notifyDeposit: true,
+      workflowNotifications: {
+        deposit: {
+          enabled: true,
+          toDeclarant: true,
+          toFinance: false,
+          relanceDays: 2,
+          subject: "Dossier {{reference_dossier}} — en attente de dépôt",
+          message:
+            "Le dossier {{reference_dossier}} est actuellement en attente de dépôt. Merci de procéder au dépôt et de confirmer l'opération dans la plateforme.",
+        },
+        reception: {
+          enabled: true,
+          toDeclarant: false,
+          toFinance: true,
+          relanceDays: 3,
+          subject: "Dossier {{reference_dossier}} — en attente de validation de réception",
+          message:
+            "Le dossier {{reference_dossier}} a été déposé par le déclarant et attend votre validation de réception dans la plateforme.",
+        },
+        validation: {
+          enabled: true,
+          toDeclarant: false,
+          toFinance: true,
+          relanceDays: 3,
+          subject: "Dossier {{reference_dossier}} — en attente de validation",
+          message:
+            "La réception du dossier {{reference_dossier}} a été confirmée. Merci de procéder à la validation finale du dossier dans la plateforme.",
+        },
+      },
     },
   };
 }
