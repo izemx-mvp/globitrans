@@ -138,6 +138,19 @@ export interface Notification {
   kind: "info" | "warning" | "success";
 }
 
+/** Étapes du workflow pouvant déclencher des emails et des relances. */
+export type WorkflowStepKey = "deposit" | "reception" | "validation";
+
+export interface WorkflowNotification {
+  enabled: boolean;
+  toDeclarant: boolean;
+  toFinance: boolean;
+  /** Période entre deux relances, en jours. */
+  relanceDays: number;
+  subject: string;
+  message: string;
+}
+
 export interface Settings {
   agentActive: boolean;
   watchedEmail: string;
@@ -153,8 +166,8 @@ export interface Settings {
   lastSync: string;
   nextSync: string;
   notifyNewMainLevee: boolean;
-  notifyAnomaly: boolean;
   notifyDeposit: boolean;
+  workflowNotifications: Record<WorkflowStepKey, WorkflowNotification>;
 }
 
 export interface MappingRow {
