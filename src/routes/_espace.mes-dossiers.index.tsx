@@ -496,11 +496,15 @@ function MesDossiersPage() {
                   </Td>
                   <Td className="whitespace-nowrap">
                     {canReceive ? (
-                      <label className="flex cursor-pointer items-center gap-2">
+                      <label
+                        className={`flex items-center gap-2 ${m.deposited ? "cursor-pointer" : "cursor-not-allowed opacity-60"}`}
+                        title={m.deposited ? undefined : "Disponible après validation du dépôt par le déclarant"}
+                      >
                         <input
                           type="checkbox"
                           className="size-3.5 accent-[var(--corporate)]"
                           checked={m.receivedByFinance}
+                          disabled={!m.deposited}
                           onChange={() =>
                             m.receivedByFinance ? setCancelRef(m.reference) : setReceptionRef(m.reference)
                           }
@@ -514,7 +518,9 @@ function MesDossiersPage() {
                             </span>
                           </span>
                         ) : (
-                          <span className="text-[12.5px] text-muted-foreground">Non reçu</span>
+                          <span className="text-[12.5px] text-muted-foreground">
+                            {m.deposited ? "Non reçu" : "En attente de dépôt"}
+                          </span>
                         )}
                       </label>
                     ) : m.receivedByFinance ? (
@@ -535,7 +541,7 @@ function MesDossiersPage() {
                       </Link>
                       {!m.deposited && (session?.role === "ADMIN" || session?.declarantId === m.declarantId) ? (
                         <Btn variant="outline" size="sm" onClick={() => setDepositRef(m.reference)}>
-                          Marquer comme déposé
+                          Valider le dépôt
                         </Btn>
                       ) : null}
                     </div>

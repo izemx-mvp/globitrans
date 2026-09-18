@@ -97,6 +97,7 @@ const STATUS_STYLES: Record<MainLeveeStatus, string> = {
   TO_DEPOSIT: "bg-warning/10 text-warning border-warning/25",
   DEPOSITED: "bg-deep/10 text-deep border-deep/20",
   FINANCE_RECEIVED: "bg-success/10 text-success border-success/25",
+  VALIDATED: "bg-corporate/10 text-corporate border-corporate/25",
 };
 
 export function StatusBadge({ status, className }: { status: MainLeveeStatus; className?: string }) {
@@ -243,6 +244,73 @@ export function Stepper({
     </ol>
   );
 }
+
+/**
+ * Étape de workflow séquentiel (dépôt → réception → validation).
+ * `locked` signale une étape indisponible tant que la précédente n'est pas validée.
+ */
+export function WorkflowStep({
+  index,
+  title,
+  owner,
+  state,
+  statusLabel,
+  details = [],
+  action,
+  hint,
+  last,
+}: {
+  index: number;
+  title: string;
+  owner: string;
+  state: "done" | "current" | "locked";
+  statusLabel: string;
+  details?: [string, string][];
+  action?: ReactNode;
+  hint?: string | undefined;
+  last?: boolean;
+}) {
+  return (
+    <li className="relative pl-8">
+      {!last ? <span className="absolute top-7 bottom-[-12px] left-[11px] w-px bg-border" aria-hidden /> : null}
+      <span
+        className={cn(
+          "absolute top-0.5 left-0 flex size-6 items-center justify-center rounded-full border text-[11px] font-semibold",
+          state === "done"
+            ? "border-success bg-success text-success-foreground"
+            : state === "current"
+              ? "border-corporate bg-soft text-corporate"
+              : "border-border bg-muted text-muted-foreground",
+        )}
+        aria-hidden
+      >
+        {state === "done" ? "✓" : index}
+      </span>
+
+      <div className={cn("rounded-lg border border-border px-3.5 py-3", state === "locked" ? "bg-muted/40" : "bg-card")}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <p className={cn("text-[13.5px] font-semibold", state === "locked" && "text-muted-foreground")}>{title}</p>
+            <p className="text-[12px] text-muted-foreground">Responsable : {owner}</p>
+          </div>
+          <Chip tone={state === "done" ? "success" : state === "current" ? "warning" : "neutral"}>{statusLabel}</Chip>
+        </div>
+
+        {details.length ? (
+          <div className="mt-2">
+            {details.map(([label, value]) => (
+              <InfoRow key={label} label={label} value={value} />
+            ))}
+          </div>
+        ) : null}
+
+        {hint ? <p className="mt-2 text-[12.5px] text-muted-foreground">{hint}</p> : null}
+        {action ? <div className="mt-3">{action}</div> : null}
+      </div>
+    </li>
+  );
+}
+
 
 export function TableWrap({ children, className }: { children: ReactNode; className?: string }) {
   return (

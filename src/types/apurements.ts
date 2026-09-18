@@ -38,8 +38,18 @@ export interface ExtraRule {
   value: string;
 }
 
-export interface SearchCriteria {
+/** Une ligne de composition : matière première + pourcentage. */
+export interface CompositionItem {
+  id: string;
   material: string;
+  percentage: number;
+}
+
+export interface SearchCriteria {
+  /** Article recherché (Chemise, Pantalon, ...). */
+  material: string;
+  /** Composition en matières premières de l'article. */
+  composition: CompositionItem[];
   targetWeight: number;
   targetValue: number;
   weightTolerance: number;

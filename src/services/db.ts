@@ -14,7 +14,7 @@ import type {
 } from "@/types";
 import { identifyCustomer, nowISO } from "./business";
 
-const KEY = "globitrans.db.v1";
+const KEY = "globitrans.db.v2";
 
 function load(): DB {
   try {
@@ -98,18 +98,20 @@ export function markAsDeposited(refs: string[], author: string) {
   commit(next);
 }
 
+/**
+ * Validation de réception par Finance.
+ * Étape strictement conditionnée au dépôt préalable par le déclarant.
+ */
 export function markAsFinanceReceived(refs: string[], author: string, note?: string) {
   const next = structuredClone(state);
   const at = nowISO();
-  patchMainLevees(next, refs, (m) => {
+  const eligible = refs.filter((r) => next.mainLevees.find((m) => m.reference === r)?.deposited);
+  if (!eligible.length) return;
+  patchMainLevees(next, eligible, (m) => {
     m.receivedByFinance = true;
     m.receivedAtFinance = at;
     m.receivedBy = author;
     m.status = "FINANCE_RECEIVED";
-    if (!m.deposited) {
-      m.deposited = true;
-      m.depositedAt = at;
-    }
     if (note) m.financeNote = note;
     m.history = [
       ...m.history,
@@ -117,7 +119,33 @@ export function markAsFinanceReceived(refs: string[], author: string, note?: str
     ];
     return m;
   });
-  refs.forEach((r) => logActivity(next, `Dossier ${r} reçu par Finance.`, author));
+  eligible.forEach((r) => logActivity(next, `Dossier ${r} reçu par Finance.`, author));
+  commit(next);
+}
+
+/**
+ * Validation finale du dossier par Finance.
+ * Étape strictement conditionnée à la validation de réception.
+ */
+export function validateDossier(refs: string[], author: string, note?: string) {
+  const next = structuredClone(state);
+  const at = nowISO();
+  const eligible = refs.filter((r) => next.mainLevees.find((m) => m.reference === r)?.receivedByFinance);
+  if (!eligible.length) return;
+  patchMainLevees(next, eligible, (m) => {
+    m.validated = true;
+    m.validatedAt = at;
+    m.validatedBy = author;
+    m.status = "VALIDATED";
+    if (note) m.validationNote = note;
+    m.history = [
+      ...m.history,
+      { at, label: `Dossier validé par ${author}.${note ? ` Commentaire : ${note}` : ""}`, author },
+    ];
+    return m;
+  });
+  eligible.forEach((r) => logActivity(next, `Dossier ${r} validé par Finance.`, author));
+  notify(next, `${eligible.length} dossier(s) validé(s)`, `Validation effectuée par ${author}.`, "success");
   commit(next);
 }
 
@@ -129,6 +157,10 @@ export function reverseReception(reference: string, author: string) {
     delete m.receivedAtFinance;
     delete m.receivedBy;
     delete m.financeNote;
+    m.validated = false;
+    delete m.validatedAt;
+    delete m.validatedBy;
+    delete m.validationNote;
     m.status = "DEPOSITED";
     m.history = [...m.history, { at, label: "Réception Finance annulée.", author }];
     return m;
@@ -176,7 +208,13 @@ export function resolveAnomaly(reference: string, clientId: string, author: stri
     m.declarantId = client?.declarantId;
     delete m.anomaly;
     delete m.anomalyMessage;
-    m.status = m.deposited ? (m.receivedByFinance ? "FINANCE_RECEIVED" : "DEPOSITED") : "TO_DEPOSIT";
+    m.status = m.validated
+      ? "VALIDATED"
+      : m.deposited
+        ? m.receivedByFinance
+          ? "FINANCE_RECEIVED"
+          : "DEPOSITED"
+        : "TO_DEPOSIT";
     m.history = [
       ...m.history,
       { at, label: `Identification validée manuellement : ${client?.companyName}.`, author },
@@ -391,6 +429,7 @@ export function syncEmails(author: string): { analyzed: number; detected: number
         status: "TO_DEPOSIT",
         deposited: false,
         receivedByFinance: false,
+        validated: false,
         notes: [],
         history: [
           { at, label: "Email reçu depuis la boîte opérations.", author: "Agent Email" },

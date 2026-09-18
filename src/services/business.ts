@@ -148,6 +148,7 @@ export const STATUS_LABELS: Record<MainLeveeStatus, string> = {
   TO_DEPOSIT: "À déposer",
   DEPOSITED: "Déposé",
   FINANCE_RECEIVED: "Reçu Finance",
+  VALIDATED: "Dossier validé",
 };
 
 export const SOURCE_LABELS: Record<IdentificationSource, string> = {

@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { RotateCcw } from "lucide-react";
+import { ChevronDown, RotateCcw } from "lucide-react";
 import { Chip, InfoRow, PageHeader, Surface } from "@/components/app/bits";
-import { Btn, Field, Modal, inputClass } from "@/components/app/dialogs";
+import { Btn, Field, Modal, Textarea, inputClass } from "@/components/app/dialogs";
 import { resetDemoData, updateSettings, useDB } from "@/services/db";
 import { useSession } from "@/services/auth";
 import { formatDateTime } from "@/services/business";
+import type { WorkflowNotification, WorkflowStepKey } from "@/types";
 
 export const Route = createFileRoute("/_espace/parametres")({
   head: () => ({
@@ -23,12 +24,104 @@ export const Route = createFileRoute("/_espace/parametres")({
   component: SettingsPage,
 });
 
+const WORKFLOW_STEPS: [WorkflowStepKey, string, string][] = [
+  ["deposit", "Dépôt du dossier", "Relances au déclarant tant que le dépôt n'est pas validé."],
+  ["reception", "Validation de réception", "Relances à la Finance jusqu'à la confirmation de réception."],
+  ["validation", "Validation du dossier", "Relances à la Finance jusqu'à la validation finale du dossier."],
+];
+
+/** Carte dépliable de configuration des emails d'une étape du workflow. */
+function WorkflowNotificationCard({
+  title,
+  hint,
+  value,
+  open,
+  onToggleOpen,
+  onChange,
+}: {
+  title: string;
+  hint: string;
+  value: WorkflowNotification;
+  open: boolean;
+  onToggleOpen: () => void;
+  onChange: (patch: Partial<WorkflowNotification>) => void;
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-card">
+      <div className="flex flex-wrap items-center gap-2 px-3.5 py-2.5">
+        <button type="button" onClick={onToggleOpen} className="flex flex-1 items-center gap-2 text-left">
+          <ChevronDown className={`size-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+          <span>
+            <span className="block text-[13.5px] font-semibold">{title}</span>
+            <span className="block text-[12px] text-muted-foreground">{hint}</span>
+          </span>
+        </button>
+        <Chip tone={value.enabled ? "success" : "neutral"}>{value.enabled ? "Activé" : "Désactivé"}</Chip>
+        <label className="flex items-center gap-2 text-[12.5px]">
+          <input
+            type="checkbox"
+            checked={value.enabled}
+            onChange={(e) => onChange({ enabled: e.target.checked })}
+            className="size-4 accent-[var(--corporate)]"
+          />
+          Activer
+        </label>
+      </div>
+
+      {open ? (
+        <div className="space-y-3 border-t border-border px-3.5 py-3">
+          <div className="flex flex-wrap gap-4">
+            <label className="flex items-center gap-2 text-[13px]">
+              <input
+                type="checkbox"
+                checked={value.toDeclarant}
+                onChange={(e) => onChange({ toDeclarant: e.target.checked })}
+                className="size-4 accent-[var(--corporate)]"
+              />
+              Notification au déclarant
+            </label>
+            <label className="flex items-center gap-2 text-[13px]">
+              <input
+                type="checkbox"
+                checked={value.toFinance}
+                onChange={(e) => onChange({ toFinance: e.target.checked })}
+                className="size-4 accent-[var(--corporate)]"
+              />
+              Notification à la Finance
+            </label>
+          </div>
+          <Field label="Période entre les relances (jours)">
+            <input
+              type="number"
+              min={1}
+              value={value.relanceDays}
+              onChange={(e) => onChange({ relanceDays: Math.max(1, Number(e.target.value) || 1) })}
+              className={`${inputClass} max-w-[140px]`}
+            />
+          </Field>
+          <Field label="Objet de l'email">
+            <input value={value.subject} onChange={(e) => onChange({ subject: e.target.value })} className={inputClass} />
+          </Field>
+          <Field label="Message de notification">
+            <Textarea value={value.message} onChange={(e) => onChange({ message: e.target.value })} rows={4} />
+          </Field>
+          <p className="text-[12px] text-muted-foreground">
+            Variables disponibles : <span className="mono">{"{{reference_dossier}}"}</span>. Les relances s'arrêtent
+            automatiquement dès que l'étape est validée.
+          </p>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function SettingsPage() {
   const db = useDB();
   const session = useSession();
   const navigate = useNavigate();
   const s = db.settings;
   const [resetOpen, setResetOpen] = useState(false);
+  const [openStep, setOpenStep] = useState<WorkflowStepKey | null>("deposit");
 
   const toggle = (key: keyof typeof s, value: boolean) => {
     updateSettings({ [key]: value });
@@ -77,54 +170,11 @@ function SettingsPage() {
           </div>
         </Surface>
 
-        <Surface title="Rapprochement des clients" description="Seuils de confiance appliqués à l'identification.">
-          <div className="space-y-3">
-            <Field label={`Seuil d'identification automatique : ${s.autoThreshold} %`}>
-              <input
-                type="range"
-                min={50}
-                max={100}
-                value={s.autoThreshold}
-                onChange={(e) => updateSettings({ autoThreshold: Number(e.target.value) })}
-                className="w-full accent-[var(--corporate)]"
-              />
-            </Field>
-            <Field label={`Seuil de validation manuelle : ${s.manualThreshold} %`}>
-              <input
-                type="range"
-                min={30}
-                max={95}
-                value={s.manualThreshold}
-                onChange={(e) => updateSettings({ manualThreshold: Number(e.target.value) })}
-                className="w-full accent-[var(--corporate)]"
-              />
-            </Field>
-            {(
-              [
-                ["normalizeNames", "Normaliser les raisons sociales"],
-                ["ignoreLegalSuffix", "Ignorer les suffixes juridiques (SARL, SA...)"],
-                ["useAliases", "Utiliser les alias clients"],
-              ] as const
-            ).map(([key, label]) => (
-              <label key={key} className="flex items-center gap-2 text-[13px]">
-                <input
-                  type="checkbox"
-                  checked={s[key]}
-                  onChange={(e) => toggle(key, e.target.checked)}
-                  className="size-4 accent-[var(--corporate)]"
-                />
-                {label}
-              </label>
-            ))}
-          </div>
-        </Surface>
-
-        <Surface title="Notifications">
+        <Surface title="Notifications générales">
           <div className="space-y-2.5">
             {(
               [
                 ["notifyNewMainLevee", "Nouvelle main levée détectée"],
-                ["notifyAnomaly", "Anomalie détectée"],
                 ["notifyDeposit", "Dépôt effectué par un déclarant"],
               ] as const
             ).map(([key, label]) => (
@@ -141,6 +191,7 @@ function SettingsPage() {
           </div>
         </Surface>
 
+
         <Surface
           title="Données de démonstration"
           description="Réinitialise l'ensemble du registre à son état initial."
@@ -150,6 +201,35 @@ function SettingsPage() {
           </Btn>
         </Surface>
       </div>
+
+      <div className="mt-4">
+        <Surface
+          title="Notifications du workflow"
+          description="Emails envoyés et relances automatiques pour chaque étape du traitement des dossiers."
+        >
+          <div className="space-y-2.5">
+            {WORKFLOW_STEPS.map(([key, title, hint]) => (
+              <WorkflowNotificationCard
+                key={key}
+                title={title}
+                hint={hint}
+                value={s.workflowNotifications[key]}
+                open={openStep === key}
+                onToggleOpen={() => setOpenStep(openStep === key ? null : key)}
+                onChange={(patch) =>
+                  updateSettings({
+                    workflowNotifications: {
+                      ...s.workflowNotifications,
+                      [key]: { ...s.workflowNotifications[key], ...patch },
+                    },
+                  })
+                }
+              />
+            ))}
+          </div>
+        </Surface>
+      </div>
+
 
       <Modal
         open={resetOpen}

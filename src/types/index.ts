@@ -70,7 +70,8 @@ export type MainLeveeStatus =
   | "REVIEW_REQUIRED"
   | "TO_DEPOSIT"
   | "DEPOSITED"
-  | "FINANCE_RECEIVED";
+  | "FINANCE_RECEIVED"
+  | "VALIDATED";
 
 export type AnomalyType =
   | "CLIENT_NOT_FOUND"
@@ -120,6 +121,10 @@ export interface MainLevee {
   receivedAtFinance?: string | undefined;
   receivedBy?: string | undefined;
   financeNote?: string | undefined;
+  validated: boolean;
+  validatedAt?: string | undefined;
+  validatedBy?: string | undefined;
+  validationNote?: string | undefined;
   notes: Note[];
   history: HistoryEntry[];
 }
@@ -131,6 +136,19 @@ export interface Notification {
   at: string;
   read: boolean;
   kind: "info" | "warning" | "success";
+}
+
+/** Étapes du workflow pouvant déclencher des emails et des relances. */
+export type WorkflowStepKey = "deposit" | "reception" | "validation";
+
+export interface WorkflowNotification {
+  enabled: boolean;
+  toDeclarant: boolean;
+  toFinance: boolean;
+  /** Période entre deux relances, en jours. */
+  relanceDays: number;
+  subject: string;
+  message: string;
 }
 
 export interface Settings {
@@ -148,8 +166,8 @@ export interface Settings {
   lastSync: string;
   nextSync: string;
   notifyNewMainLevee: boolean;
-  notifyAnomaly: boolean;
   notifyDeposit: boolean;
+  workflowNotifications: Record<WorkflowStepKey, WorkflowNotification>;
 }
 
 export interface MappingRow {

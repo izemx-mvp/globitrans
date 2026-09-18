@@ -10,6 +10,8 @@ import {
   FileSearch,
   FileSpreadsheet,
   Layers,
+  Plus,
+  Trash2,
   Loader2,
   Scale,
   Sparkles,
@@ -21,6 +23,11 @@ import { Btn, Field, Modal, Textarea, inputClass, selectClass } from "@/componen
 import { fullName, useSession } from "@/services/auth";
 import { formatDate, formatDateTime } from "@/services/business";
 import {
+  ARTICLES,
+  RAW_MATERIALS,
+  compositionError,
+  compositionTotal,
+  newCompositionItem,
   exportApurement,
   formatDelta,
   formatValue,
@@ -50,7 +57,6 @@ export const Route = createFileRoute("/_espace/apurements/")({
   component: ApurementsPage,
 });
 
-const MATERIAL_FALLBACKS = ["Aluminium", "Acier", "Cuivre", "Plastique", "Textile", "Autre"];
 
 function ApurementsPage() {
   const state = useApurements();
@@ -80,10 +86,9 @@ function ApurementsPage() {
   const activeFile = state.files[0];
   const available = lines.filter((line) => line.status !== "CLEARED");
   const clearedCount = lines.filter((line) => line.status === "CLEARED").length;
-  const materials = useMemo(() => {
-    const detected = Array.from(new Set(lines.map(getLineMaterial).filter(Boolean))).sort();
-    return detected.length ? detected : MATERIAL_FALLBACKS;
-  }, [lines]);
+  const materials = useMemo(() => [...ARTICLES], []);
+  const compTotal = compositionTotal(criteria.composition);
+  const compError = compositionError(criteria.composition);
   const lineById = useMemo(() => new Map(lines.map((line) => [line.id, line] as const)), [lines]);
   const solutions = state.lastSearch?.solutions ?? [];
   const exactFound = solutions.some((solution) => solution.exact);
@@ -93,13 +98,23 @@ function ApurementsPage() {
   const set = <K extends keyof SearchCriteria>(key: K, value: SearchCriteria[K]) =>
     setCriteria((current) => ({ ...current, [key]: value }));
 
+  const addComposition = () =>
+    setCriteria((current) => ({ ...current, composition: [...current.composition, newCompositionItem()] }));
+
+  const removeComposition = (id: string) =>
+    setCriteria((current) => ({ ...current, composition: current.composition.filter((i) => i.id !== id) }));
+
+  const updateComposition = (id: string, patch: { material?: string; percentage?: number }) =>
+    setCriteria((current) => ({
+      ...current,
+      composition: current.composition.map((i) => (i.id === id ? { ...i, ...patch } : i)),
+    }));
+
   const onFile = async (file: File) => {
     setImporting(true);
     try {
       const parsed = await parseImportedFile(file);
       importLines(parsed.meta, parsed.lines);
-      const importedMaterials = Array.from(new Set(parsed.lines.map(getLineMaterial).filter(Boolean))).sort();
-      if (importedMaterials[0]) set("material", importedMaterials[0]);
       toast.success("Fichier importé.", { description: `${parsed.lines.length} ligne(s) détectée(s) – prêt pour analyse.` });
     } catch (error) {
       toast.error("Import impossible.", { description: error instanceof Error ? error.message : "Format non reconnu." });
@@ -123,8 +138,16 @@ function ApurementsPage() {
   };
 
   const launch = () => {
-    if (!criteria.material || !criteria.targetWeight || !criteria.targetValue) {
-      toast.error("Renseignez la matière, le poids cible et la valeur cible.");
+    if (!criteria.material) {
+      toast.error("Sélectionnez d'abord un article.");
+      return;
+    }
+    if (compError) {
+      toast.error("Composition incomplète.", { description: compError });
+      return;
+    }
+    if (!criteria.targetWeight || !criteria.targetValue) {
+      toast.error("Renseignez le poids cible et la valeur cible.");
       return;
     }
     setSearching(true);
@@ -275,7 +298,7 @@ function ApurementsPage() {
                     value={nlText}
                     onChange={(event) => setNlText(event.target.value)}
                     rows={2}
-                    placeholder="Exemple : Trouve-moi 100 kg d'aluminium pour une valeur de 1 000 €."
+                    placeholder="Exemple : Trouve-moi 100 kg de chemises pour une valeur de 1 000 €."
                   />
                   <div className="mt-3 flex flex-wrap items-center gap-2">
                     <Btn variant="outline" onClick={analyseNl}><Sparkles className="size-4" /> Analyser la demande</Btn>
@@ -283,12 +306,12 @@ function ApurementsPage() {
                   </div>
                 </Surface>
 
-                <Surface title="Nouvelle recherche d'apurement" description="Définissez la matière, les objectifs et les tolérances acceptées.">
+                <Surface title="Nouvelle recherche d'apurement" description="Sélectionnez l'article, sa composition en matières premières, puis les objectifs et tolérances.">
                   <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-                    <Field label="Matière">
+                    <Field label="Matière (article)">
                       <select value={criteria.material} onChange={(event) => set("material", event.target.value)} className={selectClass}>
                         <option value="">Sélectionner</option>
-                        {materials.map((material) => <option key={material} value={material}>{material}</option>)}
+                        {ARTICLES.map((article) => <option key={article} value={article}>{article}</option>)}
                       </select>
                     </Field>
                     <Field label="Poids cible">
@@ -320,8 +343,73 @@ function ApurementsPage() {
                       </div>
                     </Field>
                   </div>
-                  <div className="mt-5 flex justify-end">
-                    <Btn onClick={launch} disabled={searching || !activeFile}>
+
+                  {criteria.material ? (
+                    <section className="mt-5 rounded-lg border border-border bg-muted/40 p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <h3 className="text-[14px] font-semibold">Composition en matières premières</h3>
+                          <p className="mt-0.5 text-[12.5px] text-muted-foreground">
+                            Indiquez les matières premières de l'article « {criteria.material} » et leur pourcentage.
+                          </p>
+                        </div>
+                        <Chip tone={compTotal === 100 ? "success" : compTotal > 100 ? "danger" : "neutral"}>
+                          Total composition : {compTotal.toLocaleString("fr-FR")} %
+                        </Chip>
+                      </div>
+
+                      <div className="mt-3 space-y-2">
+                        {criteria.composition.map((item) => (
+                          <div key={item.id} className="flex flex-wrap items-center gap-2">
+                            <select
+                              value={item.material}
+                              onChange={(event) => updateComposition(item.id, { material: event.target.value })}
+                              className={`${selectClass} max-w-[220px]`}
+                              aria-label="Matière première"
+                            >
+                              <option value="">Matière première</option>
+                              {RAW_MATERIALS.map((raw) => <option key={raw} value={raw}>{raw}</option>)}
+                            </select>
+                            <div className="flex items-center gap-1.5">
+                              <input
+                                type="number"
+                                min={0}
+                                max={100}
+                                step="0.1"
+                                value={item.percentage}
+                                onChange={(event) => updateComposition(item.id, { percentage: Number(event.target.value) })}
+                                className={`${inputClass} max-w-[110px]`}
+                                aria-label="Pourcentage"
+                              />
+                              <span className="mono text-[13px] text-muted-foreground">%</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeComposition(item.id)}
+                              disabled={criteria.composition.length <= 1}
+                              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-card hover:text-danger disabled:pointer-events-none disabled:opacity-40"
+                              aria-label="Supprimer la matière première"
+                            >
+                              <Trash2 className="size-4" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="mt-3 flex flex-wrap items-center gap-3">
+                        <Btn variant="outline" size="sm" onClick={addComposition}>
+                          <Plus className="size-4" /> Ajouter une matière première
+                        </Btn>
+                        {compError ? <span className="text-[12.5px] font-medium text-danger">{compError}</span> : null}
+                      </div>
+                    </section>
+                  ) : null}
+
+                  <div className="mt-5 flex items-center justify-end gap-3">
+                    {!criteria.material ? (
+                      <span className="text-[12.5px] text-muted-foreground">Sélectionnez d'abord un article.</span>
+                    ) : null}
+                    <Btn onClick={launch} disabled={searching || !activeFile || !criteria.material || Boolean(compError)}>
                       {searching ? <Loader2 className="size-4 animate-spin" /> : <Scale className="size-4" />}
                       {searching ? "Analyse des combinaisons en cours…" : "Lancer la recherche"}
                     </Btn>
@@ -341,7 +429,7 @@ function ApurementsPage() {
                   <div className="space-y-5">
                     <Surface title="Recherche effectuée">
                       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                        <div><p className="label-xs">Matière</p><p className="mt-1 text-[14px] font-semibold">{searchedCriteria?.material || "Toutes"}</p></div>
+                        <div><p className="label-xs">Article</p><p className="mt-1 text-[14px] font-semibold">{searchedCriteria?.material || "Tous"}</p><p className="mt-0.5 text-[12px] text-muted-foreground">{(searchedCriteria?.composition ?? []).filter((i) => i.material).map((i) => `${i.material} ${i.percentage} %`).join(" · ") || "—"}</p></div>
                         <div><p className="label-xs">Poids recherché</p><p className="mono mt-1 text-[14px] font-semibold">{formatWeight(searchedCriteria?.targetWeight ?? 0)}</p></div>
                         <div><p className="label-xs">Valeur recherchée</p><p className="mono mt-1 text-[14px] font-semibold">{formatValue(searchedCriteria?.targetValue ?? 0)}</p></div>
                         <div><p className="label-xs">Fichier</p><p className="mt-1 truncate text-[14px] font-semibold">{searchedFile?.name ?? "—"}</p></div>
