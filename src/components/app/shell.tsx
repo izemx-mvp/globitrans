@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from "react";
+import { useTheme } from "@/services/theme";
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   Bell,
