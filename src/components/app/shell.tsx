@@ -2,6 +2,8 @@ import { useMemo, useState, type ReactNode } from "react";
 import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import {
   Bell,
+  Moon,
+  Sun,
   Building2,
   ChevronsLeft,
   ChevronsRight,
