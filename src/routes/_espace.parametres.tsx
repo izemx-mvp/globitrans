@@ -109,6 +109,35 @@ function SettingsPage() {
         </Surface>
       </div>
 
+      <div className="mt-4">
+        <Surface
+          title="Notifications du workflow"
+          description="Emails envoyés et relances automatiques pour chaque étape du traitement des dossiers."
+        >
+          <div className="space-y-2.5">
+            {WORKFLOW_STEPS.map(([key, title, hint]) => (
+              <WorkflowNotificationCard
+                key={key}
+                title={title}
+                hint={hint}
+                value={s.workflowNotifications[key]}
+                open={openStep === key}
+                onToggleOpen={() => setOpenStep(openStep === key ? null : key)}
+                onChange={(patch) =>
+                  updateSettings({
+                    workflowNotifications: {
+                      ...s.workflowNotifications,
+                      [key]: { ...s.workflowNotifications[key], ...patch },
+                    },
+                  })
+                }
+              />
+            ))}
+          </div>
+        </Surface>
+      </div>
+
+
       <Modal
         open={resetOpen}
         onClose={() => setResetOpen(false)}
