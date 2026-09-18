@@ -77,54 +77,11 @@ function SettingsPage() {
           </div>
         </Surface>
 
-        <Surface title="Rapprochement des clients" description="Seuils de confiance appliqués à l'identification.">
-          <div className="space-y-3">
-            <Field label={`Seuil d'identification automatique : ${s.autoThreshold} %`}>
-              <input
-                type="range"
-                min={50}
-                max={100}
-                value={s.autoThreshold}
-                onChange={(e) => updateSettings({ autoThreshold: Number(e.target.value) })}
-                className="w-full accent-[var(--corporate)]"
-              />
-            </Field>
-            <Field label={`Seuil de validation manuelle : ${s.manualThreshold} %`}>
-              <input
-                type="range"
-                min={30}
-                max={95}
-                value={s.manualThreshold}
-                onChange={(e) => updateSettings({ manualThreshold: Number(e.target.value) })}
-                className="w-full accent-[var(--corporate)]"
-              />
-            </Field>
-            {(
-              [
-                ["normalizeNames", "Normaliser les raisons sociales"],
-                ["ignoreLegalSuffix", "Ignorer les suffixes juridiques (SARL, SA...)"],
-                ["useAliases", "Utiliser les alias clients"],
-              ] as const
-            ).map(([key, label]) => (
-              <label key={key} className="flex items-center gap-2 text-[13px]">
-                <input
-                  type="checkbox"
-                  checked={s[key]}
-                  onChange={(e) => toggle(key, e.target.checked)}
-                  className="size-4 accent-[var(--corporate)]"
-                />
-                {label}
-              </label>
-            ))}
-          </div>
-        </Surface>
-
-        <Surface title="Notifications">
+        <Surface title="Notifications générales">
           <div className="space-y-2.5">
             {(
               [
                 ["notifyNewMainLevee", "Nouvelle main levée détectée"],
-                ["notifyAnomaly", "Anomalie détectée"],
                 ["notifyDeposit", "Dépôt effectué par un déclarant"],
               ] as const
             ).map(([key, label]) => (
@@ -140,6 +97,7 @@ function SettingsPage() {
             ))}
           </div>
         </Surface>
+
 
         <Surface
           title="Données de démonstration"
