@@ -1,12 +1,13 @@
 import { useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
-import { RotateCcw } from "lucide-react";
+import { ChevronDown, RotateCcw } from "lucide-react";
 import { Chip, InfoRow, PageHeader, Surface } from "@/components/app/bits";
-import { Btn, Field, Modal, inputClass } from "@/components/app/dialogs";
+import { Btn, Field, Modal, Textarea, inputClass } from "@/components/app/dialogs";
 import { resetDemoData, updateSettings, useDB } from "@/services/db";
 import { useSession } from "@/services/auth";
 import { formatDateTime } from "@/services/business";
+import type { WorkflowNotification, WorkflowStepKey } from "@/types";
 
 export const Route = createFileRoute("/_espace/parametres")({
   head: () => ({
