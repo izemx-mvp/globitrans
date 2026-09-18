@@ -70,7 +70,8 @@ export type MainLeveeStatus =
   | "REVIEW_REQUIRED"
   | "TO_DEPOSIT"
   | "DEPOSITED"
-  | "FINANCE_RECEIVED";
+  | "FINANCE_RECEIVED"
+  | "VALIDATED";
 
 export type AnomalyType =
   | "CLIENT_NOT_FOUND"
@@ -120,6 +121,10 @@ export interface MainLevee {
   receivedAtFinance?: string | undefined;
   receivedBy?: string | undefined;
   financeNote?: string | undefined;
+  validated: boolean;
+  validatedAt?: string | undefined;
+  validatedBy?: string | undefined;
+  validationNote?: string | undefined;
   notes: Note[];
   history: HistoryEntry[];
 }

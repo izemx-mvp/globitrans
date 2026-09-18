@@ -23,6 +23,7 @@ import {
   StatusBadge,
   Stepper,
   Surface,
+  WorkflowStep,
 } from "@/components/app/bits";
 import { Btn, Field, Modal, Textarea, inputClass, selectClass } from "@/components/app/dialogs";
 import {
@@ -33,6 +34,7 @@ import {
   resolveAnomaly,
   reverseReception,
   updateMainLevee,
+  validateDossier,
   useDB,
 } from "@/services/db";
 import { fullName, useSession } from "@/services/auth";
@@ -74,6 +76,8 @@ function DossierPage() {
   const [editOpen, setEditOpen] = useState(false);
   const [receptionOpen, setReceptionOpen] = useState(false);
   const [financeNote, setFinanceNote] = useState("");
+  const [validationOpen, setValidationOpen] = useState(false);
+  const [validationNote, setValidationNote] = useState("");
   const [resolveOpen, setResolveOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
   const [assignId, setAssignId] = useState("");
@@ -283,61 +287,111 @@ function DossierPage() {
                   { label: "Document analysé", at: ml.history[2]?.at, done: true },
                   { label: "Client identifié", at: ml.clientId ? ml.history[4]?.at : undefined, done: Boolean(ml.clientId) },
                   { label: "Déclarant affecté", at: ml.declarantId ? ml.history[5]?.at : undefined, done: Boolean(ml.declarantId) },
-                  { label: "Dossier déposé", at: ml.depositedAt, done: ml.deposited },
-                  { label: "Réception Finance", at: ml.receivedAtFinance, done: ml.receivedByFinance },
                 ]}
               />
             </Surface>
 
-            <Surface title="Réception Finance">
-              {ml.receivedByFinance ? (
-                <>
-                  <Chip tone="success">Dossier reçu</Chip>
-                  <div className="mt-3">
-                    <InfoRow label="Déposé par" value={ml.depositedBy ?? "—"} />
-                    <InfoRow label="Date de dépôt" value={formatDateTime(ml.depositedAt)} />
-                    <InfoRow label="Reçu par" value={ml.receivedBy ?? "—"} />
-                    <InfoRow label="Date de réception" value={formatDateTime(ml.receivedAtFinance)} />
-                    <InfoRow label="Note Finance" value={ml.financeNote ?? "—"} />
-                  </div>
-                </>
-              ) : (
-                <>
-                  <label className="flex items-start gap-3 rounded-md border border-border bg-muted/40 px-3.5 py-3">
-                    <input
-                      type="checkbox"
-                      className="mt-0.5 size-4 accent-[var(--corporate)]"
-                      checked={false}
-                      onChange={() => canReceive && setReceptionOpen(true)}
-                      disabled={!canReceive}
-                    />
-                    <span>
-                      <span className="block text-[13.5px] font-medium">Dossier reçu par la Finance</span>
-                      <span className="block text-[12.5px] text-muted-foreground">
-                        {ml.deposited
-                          ? `Déposé le ${formatDateTime(ml.depositedAt)} par ${ml.depositedBy}.`
-                          : "Le dossier n'a pas encore été déposé par le déclarant."}
-                      </span>
-                    </span>
-                  </label>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {canReceive ? (
-                      <Btn onClick={() => setReceptionOpen(true)}>Confirmer la réception</Btn>
-                    ) : null}
-                    {canDeposit && !ml.deposited ? (
+            <Surface
+              title="Workflow de traitement"
+              description="Les étapes se déroulent dans l'ordre : dépôt, réception, validation."
+            >
+              <ol className="space-y-3">
+                {/* Étape 1 — dépôt par le déclarant */}
+                <WorkflowStep
+                  index={1}
+                  title="Dépôt du dossier"
+                  owner="Déclarant"
+                  state={ml.deposited ? "done" : "current"}
+                  statusLabel={ml.deposited ? "Déposé" : "En attente de dépôt"}
+                  details={
+                    ml.deposited
+                      ? [
+                          ["Déclarant", ml.depositedBy ?? "—"],
+                          ["Date", formatDateTime(ml.depositedAt)],
+                        ]
+                      : []
+                  }
+                  action={
+                    !ml.deposited && canDeposit ? (
                       <Btn
-                        variant="outline"
+                        size="sm"
                         onClick={() => {
                           markAsDeposited([ml.reference], author);
-                          toast.success("Dossier marqué comme déposé.");
+                          toast.success("Dépôt validé.", { description: "Le dossier est transmis à la Finance." });
                         }}
                       >
-                        Marquer comme déposé
+                        Valider le dépôt du dossier
                       </Btn>
-                    ) : null}
-                  </div>
-                </>
-              )}
+                    ) : null
+                  }
+                  hint={!ml.deposited && !canDeposit ? "Action réservée au déclarant en charge du dossier." : undefined}
+                />
+
+                {/* Étape 2 — validation de réception par Finance */}
+                <WorkflowStep
+                  index={2}
+                  title="Validation de réception"
+                  owner="Finance"
+                  state={ml.receivedByFinance ? "done" : ml.deposited ? "current" : "locked"}
+                  statusLabel={ml.receivedByFinance ? "Réception confirmée" : "En attente de réception"}
+                  details={
+                    ml.receivedByFinance
+                      ? [
+                          ["Validateur", ml.receivedBy ?? "—"],
+                          ["Date", formatDateTime(ml.receivedAtFinance)],
+                          ["Commentaire", ml.financeNote ?? "—"],
+                        ]
+                      : []
+                  }
+                  action={
+                    !ml.receivedByFinance && canReceive ? (
+                      <Btn size="sm" disabled={!ml.deposited} onClick={() => setReceptionOpen(true)}>
+                        Valider la réception
+                      </Btn>
+                    ) : null
+                  }
+                  hint={
+                    !ml.deposited
+                      ? "Disponible après validation du dépôt par le déclarant."
+                      : !ml.receivedByFinance && !canReceive
+                        ? "Action réservée au département Finance."
+                        : undefined
+                  }
+                />
+
+                {/* Étape 3 — validation du dossier par Finance */}
+                <WorkflowStep
+                  index={3}
+                  title="Validation du dossier"
+                  owner="Finance"
+                  state={ml.validated ? "done" : ml.receivedByFinance ? "current" : "locked"}
+                  statusLabel={ml.validated ? "Dossier validé" : "En attente de validation"}
+                  details={
+                    ml.validated
+                      ? [
+                          ["Validé par", ml.validatedBy ?? "—"],
+                          ["Date", formatDateTime(ml.validatedAt)],
+                          ["Commentaire", ml.validationNote ?? "—"],
+                        ]
+                      : []
+                  }
+                  action={
+                    !ml.validated && canReceive ? (
+                      <Btn size="sm" disabled={!ml.receivedByFinance} onClick={() => setValidationOpen(true)}>
+                        Valider le dossier
+                      </Btn>
+                    ) : null
+                  }
+                  hint={
+                    !ml.receivedByFinance
+                      ? "Disponible après validation de la réception."
+                      : !ml.validated && !canReceive
+                        ? "Action réservée au département Finance."
+                        : undefined
+                  }
+                  last
+                />
+              </ol>
             </Surface>
 
             <Surface title="Notes opérationnelles">
@@ -536,6 +590,40 @@ function DossierPage() {
           toast.success("Réception confirmée.", { description: `${ml.reference} est désormais reçu par la Finance.` });
         }}
       />
+
+      <Modal
+        open={validationOpen}
+        onClose={() => setValidationOpen(false)}
+        title="Valider le dossier"
+        description={`Dossier ${ml.reference} — validation finale par le département Finance.`}
+        footer={
+          <>
+            <Btn variant="outline" onClick={() => setValidationOpen(false)}>
+              Annuler
+            </Btn>
+            <Btn
+              onClick={() => {
+                validateDossier([ml.reference], author, validationNote || undefined);
+                setValidationOpen(false);
+                setValidationNote("");
+                toast.success("Dossier validé.", { description: `${ml.reference} est désormais validé.` });
+              }}
+            >
+              Confirmer la validation
+            </Btn>
+          </>
+        }
+      >
+        <div className="mb-3">
+          <InfoRow label="Déposé le" value={formatDateTime(ml.depositedAt)} />
+          <InfoRow label="Réception confirmée le" value={formatDateTime(ml.receivedAtFinance)} />
+        </div>
+        <Textarea
+          value={validationNote}
+          onChange={(e) => setValidationNote(e.target.value)}
+          placeholder="Commentaire de validation (facultatif)..."
+        />
+      </Modal>
 
       <EditModal open={editOpen} onClose={() => setEditOpen(false)} reference={ml.reference} />
       <ResolveModal open={resolveOpen} onClose={() => setResolveOpen(false)} reference={ml.reference} />

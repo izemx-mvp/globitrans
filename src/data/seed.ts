@@ -171,6 +171,7 @@ function makeMainLevee(index: number, refNum: number, date: string, status: Main
 
   const deposited = status === "DEPOSITED" || status === "FINANCE_RECEIVED";
   const received = status === "FINANCE_RECEIVED";
+  const validatedDossier = received && index % 3 === 0;
   const depositHour = 13 + (index % 4);
   const receivedByFinanceUser = financeUsers[index % financeUsers.length]!;
 
@@ -191,7 +192,7 @@ function makeMainLevee(index: number, refNum: number, date: string, status: Main
     clientId,
     matchingConfidence: confidence,
     declarantId,
-    status,
+    status: validatedDossier ? "VALIDATED" : status,
     anomaly,
     anomalyMessage,
     deposited,
@@ -201,6 +202,9 @@ function makeMainLevee(index: number, refNum: number, date: string, status: Main
     receivedAtFinance: received ? t(date, depositHour + 1, (index * 17) % 60) : undefined,
     receivedBy: received ? receivedByFinanceUser : undefined,
     financeNote: received ? "Dossier complet." : undefined,
+    validated: validatedDossier,
+    validatedAt: validatedDossier ? t(date, depositHour + 2, (index * 23) % 60) : undefined,
+    validatedBy: validatedDossier ? receivedByFinanceUser : undefined,
     notes: [],
     history: [],
   };

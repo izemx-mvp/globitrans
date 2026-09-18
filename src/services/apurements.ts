@@ -4,13 +4,14 @@ import type {
   ApurementFile,
   ApurementLine,
   ApurementRecord,
+  CompositionItem,
   ApurementState,
   SearchCriteria,
   SearchPriority,
   Solution,
 } from "@/types/apurements";
 
-const KEY = "globitrans.apurements.v1";
+const KEY = "globitrans.apurements.v2";
 
 function load(): ApurementState {
   try {
@@ -79,9 +80,40 @@ export const PRIORITY_LABELS: Record<SearchPriority, string> = {
   CLOSEST: "Combinaison la plus proche de l'objectif",
 };
 
+/* ---------- Articles et matières premières ---------- */
+
+export const ARTICLES = ["Chemise", "Pantalon", "Veste", "T-shirt", "Pull", "Jupe", "Robe", "Autre"] as const;
+
+export const RAW_MATERIALS = ["Coton", "Polyester", "Viscose", "Laine", "Élasthanne", "Lin", "Autre"] as const;
+
+export function newCompositionItem(material = "", percentage = 0): CompositionItem {
+  return { id: `CMP-${Math.random().toString(36).slice(2, 9)}`, material, percentage };
+}
+
+export function compositionTotal(items: CompositionItem[]): number {
+  return Math.round(items.reduce((a, i) => a + (Number(i.percentage) || 0), 0) * 100) / 100;
+}
+
+/** Retourne le message d'erreur bloquant, ou null si la composition est valide. */
+export function compositionError(items: CompositionItem[]): string | null {
+  const filled = items.filter((i) => i.material.trim());
+  if (!filled.length) return "Ajoutez au moins une matière première.";
+  const seen = new Set<string>();
+  for (const i of filled) {
+    if (seen.has(i.material)) return `La matière première « ${i.material} » est saisie deux fois.`;
+    seen.add(i.material);
+    if (!(Number(i.percentage) > 0)) return `Renseignez un pourcentage pour « ${i.material} ».`;
+  }
+  const total = compositionTotal(filled);
+  if (total > 100) return `Le total de la composition dépasse 100 % (${total} %).`;
+  if (total < 100) return `Le total de la composition doit atteindre 100 % (actuellement ${total} %).`;
+  return null;
+}
+
 export function defaultCriteria(): SearchCriteria {
   return {
-    material: "Aluminium",
+    material: "Chemise",
+    composition: [newCompositionItem("Coton", 70), newCompositionItem("Polyester", 30)],
     targetWeight: 100,
     targetValue: 1000,
     weightTolerance: 0,
@@ -112,7 +144,8 @@ export function filterLines(lines: ApurementLine[], c: SearchCriteria): Apuremen
     if (ref && !l.reference.toLowerCase().includes(ref)) return false;
     if (c.dateFrom && l.date < c.dateFrom) return false;
     if (c.dateTo && l.date > c.dateTo) return false;
-    if (c.material && getLineMaterial(l).toLowerCase() !== c.material.toLowerCase()) return false;
+    const comp = (c.composition ?? []).map((i) => i.material.trim().toLowerCase()).filter(Boolean);
+    if (comp.length && !comp.includes(getLineMaterial(l).toLowerCase())) return false;
     for (const rule of c.rules) {
       if (!rule.column || !rule.value.trim()) continue;
       const raw = String(l.extra[rule.column] ?? "").toLowerCase();
